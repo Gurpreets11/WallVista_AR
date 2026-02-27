@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.preet.wallvistaar.R;
@@ -21,6 +22,7 @@ import com.preet.wallvistaar.utils.FileUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 
 import androidx.annotation.Nullable;
 
@@ -33,19 +35,40 @@ public class PreviewActivity extends BaseActivity {
     private Bitmap maskBitmap;
     private Bitmap editedBitmap;
 
-    private ImageView imagePreview;
+   // private ImageView imagePreview;
     private LinearLayout colorContainer;
     private Button btnToggle;
     private Button btnSave;
 
     private boolean isShowingOriginal = true;
 
+
+    private float currentOpacity = 1.0f;
+
+    private static final int MODE_NONE = 0;
+    private static final int MODE_COLOR = 1;
+    private static final int MODE_WALLPAPER = 2;
+
+    private int lastMode = MODE_NONE;
+    private int lastSelectedColor;
+    private Bitmap lastSelectedWallpaper;
+
+    ImageView originalImage;
+    ImageView effectImage;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
 
-        imagePreview = findViewById(R.id.imagePreview);
+
+
+        originalImage = findViewById(R.id.originalImage);
+        effectImage = findViewById(R.id.effectImage);
+
+        originalImage.setImageBitmap(originalBitmap);
+
+        //imagePreview = findViewById(R.id.imagePreview);
         colorContainer = findViewById(R.id.colorContainer);
 
         btnToggle = findViewById(R.id.btnToggle);
@@ -57,13 +80,98 @@ public class PreviewActivity extends BaseActivity {
         loadImages();
         setupColorOptions();
         setupButtons();
+
+        wallpaperContainer = findViewById(R.id.wallpaperContainer);
+        loadWallpapers();
+
+        SeekBar opacitySeekBar = findViewById(R.id.opacitySeekBar);
+
+        opacitySeekBar.setOnSeekBarChangeListener(
+                new SeekBar.OnSeekBarChangeListener() {
+
+                    @Override
+                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                        currentOpacity = progress / 100f;
+
+                        // Reapply last effect
+                        if (lastMode == MODE_COLOR) {
+                            applyColorToWall(lastSelectedColor);
+                        } else if (lastMode == MODE_WALLPAPER) {
+                            applyWallpaperToWall(lastSelectedWallpaper);
+                        }
+                    }
+
+                    @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+                    @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+                });
     }
+
+    private LinearLayout wallpaperContainer;
+
+    private final String[] wallpaperList = {
+            "brick.jpg",
+            "wood.jpg",
+            "marble.jpg",
+            "fabric.jpg",
+            "pattern.jpg"
+    };
 
     @Override
     protected void onAllPermissionsGranted() {
         // Not required here
     }
 
+    // ---------------------------------------------------
+    // LOAD WALLPAPER
+    // ---------------------------------------------------
+
+    private void loadWallpapers() {
+
+        for (String wallpaperName : wallpaperList) {
+
+            ImageView imageView = new ImageView(this);
+
+            int size = dpToPx(80);
+
+            LinearLayout.LayoutParams params =
+                    new LinearLayout.LayoutParams(size, size);
+
+            params.setMargins(16, 0, 16, 0);
+
+            imageView.setLayoutParams(params);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            imageView.setBackgroundResource(android.R.color.darker_gray);
+
+            // Load preview image
+            Bitmap wallpaperBitmap = loadWallpaperFromAssets(wallpaperName);
+            imageView.setImageBitmap(wallpaperBitmap);
+
+            imageView.setOnClickListener(v -> {
+//                applyWallpaperToWall(wallpaperBitmap);
+
+                lastMode = MODE_WALLPAPER;
+                lastSelectedWallpaper = wallpaperBitmap;
+                applyWallpaperToWall(wallpaperBitmap);
+
+            });
+
+            wallpaperContainer.addView(imageView);
+        }
+    }
+
+    private Bitmap loadWallpaperFromAssets(String fileName) {
+        try {
+            InputStream is = getAssets().open("wallpapers/" + fileName);
+            return BitmapFactory.decodeStream(is);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
     // ---------------------------------------------------
     // LOAD IMAGES
     // ---------------------------------------------------
@@ -72,8 +180,8 @@ public class PreviewActivity extends BaseActivity {
         originalBitmap = BitmapFactory.decodeFile(originalPath);
         maskBitmap = BitmapFactory.decodeFile(maskPath);
 
-        imagePreview.setImageBitmap(originalBitmap);
-
+//        imagePreview.setImageBitmap(originalBitmap);
+        originalImage.setImageBitmap(originalBitmap);
 //        imagePreview.setImageBitmap(maskBitmap);
 
         Log.d("PREVIEW_DEBUG", "Original path: " + originalPath);
@@ -110,7 +218,11 @@ public class PreviewActivity extends BaseActivity {
 
             colorView.setOnClickListener(v -> {
                 Log.d("COLOR_CLICK", "Color clicked: " + color);
+                //applyColorToWall(color);
+                lastMode = MODE_COLOR;
+                lastSelectedColor = color;
                 applyColorToWall(color);
+
             });
 
             colorContainer.addView(colorView);
@@ -169,7 +281,8 @@ public class PreviewActivity extends BaseActivity {
             if (maskPixels[i] != Color.BLACK) {
                 int origColor = originalPixels[i];
 
-                int r = Color.red(origColor);
+                // old code without opacity
+                /*int r = Color.red(origColor);
                 int g = Color.green(origColor);
                 int b = Color.blue(origColor);
 
@@ -178,6 +291,17 @@ public class PreviewActivity extends BaseActivity {
                 g = (int)(g * 0.6 + paintG * 0.4);
                 b = (int)(b * 0.6 + paintB * 0.4);
 
+                originalPixels[i] = Color.rgb(r, g, b);*/
+
+                // new code for opacity..
+                int rBlend = (Color.red(origColor) * Color.red(color)) / 255;
+                int gBlend = (Color.green(origColor) * Color.green(color)) / 255;
+                int bBlend = (Color.blue(origColor) * Color.blue(color)) / 255;
+
+                int r = (int)((1 - currentOpacity) * Color.red(origColor) + currentOpacity * rBlend);
+                int g = (int)((1 - currentOpacity) * Color.green(origColor) + currentOpacity * gBlend);
+                int b = (int)((1 - currentOpacity) * Color.blue(origColor) + currentOpacity * bBlend);
+
                 originalPixels[i] = Color.rgb(r, g, b);
             }
         }
@@ -185,9 +309,14 @@ public class PreviewActivity extends BaseActivity {
         resultBitmap.setPixels(originalPixels, 0, width, 0, 0, width, height);
 
         editedBitmap = resultBitmap;
-        imagePreview.setImageBitmap(editedBitmap);
+//        imagePreview.setImageBitmap(editedBitmap);
+
+        effectImage.setImageBitmap(resultBitmap);
+        effectImage.setAlpha(currentOpacity);
 
         isShowingOriginal = false;
+
+
     }
 
     // ---------------------------------------------------
@@ -209,11 +338,11 @@ public class PreviewActivity extends BaseActivity {
 
         if (editedBitmap == null) return;
 
-        if (isShowingOriginal) {
+        /*if (isShowingOriginal) {
             imagePreview.setImageBitmap(editedBitmap);
         } else {
             imagePreview.setImageBitmap(originalBitmap);
-        }
+        }*/
 
         isShowingOriginal = !isShowingOriginal;
     }
@@ -255,4 +384,76 @@ public class PreviewActivity extends BaseActivity {
             e.printStackTrace();
         }
     }
+
+
+    private void applyWallpaperToWall(Bitmap wallpaperBitmap) {
+
+        if (originalBitmap == null || maskBitmap == null) return;
+
+        Bitmap resultBitmap =
+                originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
+
+        int width = resultBitmap.getWidth();
+        int height = resultBitmap.getHeight();
+
+        Bitmap scaledWallpaper = Bitmap.createScaledBitmap(
+                wallpaperBitmap,
+                width,
+                height,
+                true
+        );
+
+        int[] originalPixels = new int[width * height];
+        int[] maskPixels = new int[width * height];
+        int[] wallpaperPixels = new int[width * height];
+
+        resultBitmap.getPixels(originalPixels, 0, width, 0, 0, width, height);
+        maskBitmap.getPixels(maskPixels, 0, width, 0, 0, width, height);
+        scaledWallpaper.getPixels(wallpaperPixels, 0, width, 0, 0, width, height);
+
+        for (int i = 0; i < originalPixels.length; i++) {
+
+            if (maskPixels[i] != Color.BLACK) {
+
+                int orig = originalPixels[i];
+                int wall = wallpaperPixels[i];
+
+                // old code without opacity
+                // Multiply blend (realistic)
+                /*int r = (Color.red(orig) * Color.red(wall)) / 255;
+                int g = (Color.green(orig) * Color.green(wall)) / 255;
+                int b = (Color.blue(orig) * Color.blue(wall)) / 255;
+
+                originalPixels[i] = Color.rgb(r, g, b);*/
+
+                // new code for opacity..
+                int rBlend = (Color.red(orig) * Color.red(wall)) / 255;
+                int gBlend = (Color.green(orig) * Color.green(wall)) / 255;
+                int bBlend = (Color.blue(orig) * Color.blue(wall)) / 255;
+
+                int r = (int)((1 - currentOpacity) * Color.red(orig) + currentOpacity * rBlend);
+                int g = (int)((1 - currentOpacity) * Color.green(orig) + currentOpacity * gBlend);
+                int b = (int)((1 - currentOpacity) * Color.blue(orig) + currentOpacity * bBlend);
+
+                originalPixels[i] = Color.rgb(r, g, b);
+            }
+        }
+
+        resultBitmap.setPixels(originalPixels, 0, width, 0, 0, width, height);
+//        imagePreview.setImageBitmap(resultBitmap);
+
+        effectImage.setImageBitmap(resultBitmap);
+        effectImage.setAlpha(currentOpacity);
+
+    }
+
+    /*private Bitmap loadWallpaperFromAssets(String fileName) {
+        try {
+            InputStream is = getAssets().open("wallpapers/" + fileName);
+            return BitmapFactory.decodeStream(is);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }*/
 }

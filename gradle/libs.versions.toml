@@ -33,7 +33,8 @@ room = "2.6.1"
 # Glide
 glide = "4.16.0"
 
-
+#opencv
+opencv = "4.9.0"
 
 
 
@@ -78,6 +79,8 @@ glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 
 # Activity
 activity = { module = "androidx.activity:activity", version.ref = "activity" }
+
+opencv = { module = "org.opencv:opencv-android", version.ref = "opencv" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

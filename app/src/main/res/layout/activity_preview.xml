@@ -9,9 +9,26 @@
         android:id="@+id/imagePreview"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1" android:visibility="gone"
         android:scaleType="fitCenter"/>
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/originalImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"/>
+
+        <ImageView
+            android:id="@+id/effectImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"/>
+    </FrameLayout>
 
     <Button
         android:id="@+id/btnToggle"
@@ -36,4 +53,34 @@
             android:layout_height="wrap_content"/>
     </HorizontalScrollView>
 
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp">
+
+        <LinearLayout
+            android:id="@+id/wallpaperContainer"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </HorizontalScrollView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Opacity"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"/>
+
+    <SeekBar
+        android:id="@+id/opacitySeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:progress="100"/>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="60dp"/>
 </LinearLayout>

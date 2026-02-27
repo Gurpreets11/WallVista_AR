@@ -62,4 +62,5 @@ dependencies {
     implementation(libs.glide)
     implementation(project(":opencv"))
 
+//    implementation(libs.opencv)
  }
