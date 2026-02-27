@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.preet.wallvistaar"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.preet.wallvistaar"
@@ -40,4 +40,26 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
-}
+
+    implementation(libs.androidx.core.ktx)
+
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.livedata)
+
+    implementation(libs.camera.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
+
+    implementation(libs.arcore)
+
+    implementation(libs.tflite)
+    implementation(libs.tflite.support)
+
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+
+    implementation(libs.glide)
+    implementation(project(":opencv"))
+
+ }

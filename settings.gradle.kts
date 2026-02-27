@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "WallVistaAR"
 include(":app")
- 
+include(":opencv")
