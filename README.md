@@ -5,7 +5,7 @@ Set up sample texture images (brick, wood, marble, etc.) inside assets for compa
 Designed the image processing flow using grayscale conversion, blur, edge detection, and ORB feature matching.
 Implemented the logic to compare user-selected images with reference textures using BFMatcher.
 
-** Key Points*
+### Key Points
 
    - Integrated OpenCV SDK into Android project with native .so libraries
    - Configured Gradle and resolved dependency / large file issues
